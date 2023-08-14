@@ -2,6 +2,8 @@ import math
 
 from torch import nn
 
+from masksembles.torch import *
+
 from .head import Head
 from .backbone import darknet_pan_backbone
 from .transform import Transformer
@@ -10,7 +12,7 @@ from .transform import Transformer
 class YOLOv5(nn.Module):
     def __init__(self, num_classes, model_size=(0.33, 0.5),
                  match_thresh=4, giou_ratio=1, img_sizes=(320, 416),
-                 score_thresh=0.1, nms_thresh=0.6, detections=100):
+                 score_thresh=0.1, nms_thresh=0.6, detections=100, N=4, s=2.0):
         super().__init__()
         # original
         anchors1 = [
@@ -29,6 +31,12 @@ class YOLOv5(nn.Module):
         self.backbone = darknet_pan_backbone(
             depth_multiple=model_size[0], width_multiple=model_size[1]) # 7.5M parameters
         
+        self.mask = Masksembles2D(
+                    channels=128,
+                    n=N,
+                    scale=s
+                )
+        
         in_channels_list = self.backbone.body.out_channels_list
         strides = (8, 16, 32)
         num_anchors = [len(s) for s in anchors]
@@ -43,11 +51,17 @@ class YOLOv5(nn.Module):
             img_sizes = (img_sizes, img_sizes)
         self.transformer = Transformer(
             min_size=img_sizes[0], max_size=img_sizes[1], stride=max(strides))
+        
+        
     
     def forward(self, images, targets=None):
         images, targets, scale_factors, image_shapes = self.transformer(images, targets)
         features = self.backbone(images)
         
+        print(features[0].shape)
+        features[0] = self.mask(features[0])
+        print(features[0].shape)
+
         if self.training:
             losses = self.head(features, targets)
             return losses

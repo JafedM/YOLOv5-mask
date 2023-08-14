@@ -1,4 +1,4 @@
-from .model import YOLOv5
+from .model.yolo22 import YOLOv5
 from .datasets import *
 from .engine import train_one_epoch, evaluate
 from .distributed import init_distributed_mode, get_rank, get_world_size

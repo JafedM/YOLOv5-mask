@@ -127,3 +127,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+#Mask
+data/*
+yolov5s_official_2cf45318.pth
