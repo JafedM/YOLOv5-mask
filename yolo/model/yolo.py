@@ -58,9 +58,7 @@ class YOLOv5(nn.Module):
         images, targets, scale_factors, image_shapes = self.transformer(images, targets)
         features = self.backbone(images)
         
-        print(features[0].shape)
         features[0] = self.mask(features[0])
-        print(features[0].shape)
 
         if self.training:
             losses = self.head(features, targets)
