@@ -131,3 +131,4 @@ dmypy.json
 #Mask
 data/*
 yolov5s_official_2cf45318.pth
+checkpoints/*
