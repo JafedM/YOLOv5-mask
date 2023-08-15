@@ -85,3 +85,18 @@ The weights is from [ultralytics' repo](https://github.com/ultralytics/yolov5).
 | model | bbox AP | FPS | params |
 | :----: |:---: | :--: | :--: |
 | [YOLOv5s](https://github.com/Okery/YOLOv5-PyTorch/releases/download/v0.3/yolov5s_official_2cf45318.pth) | 36.1 | 410 | 7.5M |
+
+## Credits
+
+### Original Yolov5 by Okery
+https://github.com/Okery/YOLOv5-PyTorch.git
+
+
+### Masksembles
+```
+@inproceedings{Durasov21,
+  author = {N. Durasov and T. Bagautdinov and P. Baque and P. Fua},
+  title = {{Masksembles for Uncertainty Estimation}},
+  booktitle = CVPR,
+  year = 2021
+}
