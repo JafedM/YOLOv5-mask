@@ -91,7 +91,7 @@ def main(args):
     
     model_sizes = {"small": (0.33, 0.5), "medium": (0.67, 0.75), "large": (1, 1), "extreme": (1.33, 1.25)}
     num_classes = len(d_train.dataset.classes)
-    model = yolo.YOLOv5(num_classes, model_sizes[args.model_size], img_sizes=args.img_sizes).to(device)
+    model = yolo.YOLOv5(num_classes, model_sizes[args.model_size], img_sizes=args.img_sizes, N=args.N_mask, s=args.s_mask).to(device)
     model.transformer.mosaic = args.mosaic
     
     model_without_ddp = model
@@ -186,7 +186,7 @@ if __name__ == "__main__":
     parser.add_argument("--use-cuda", action="store_true") # whether use the GPU
     
     parser.add_argument("--dataset", default="coco") # style of dataset, choice: ["coco", "voc"]
-    parser.add_argument("--data-dir", default="/data/coco2017") # root directory of the dataset
+    parser.add_argument("--data-dir", default="data/coco2017") # root directory of the dataset
     parser.add_argument("--dali", action="store_true") # NVIDIA's DataLoader, faster but without random affine
     parser.add_argument("--ckpt-path") # basic checkpoint path
     parser.add_argument("--results") # path where to save the evaluation results
@@ -213,6 +213,10 @@ if __name__ == "__main__":
     parser.add_argument("--dist-url", default="env://") # distributed initial method
     
     parser.add_argument("--root") # gpu cloud platform special
+
+    parser.add_argument("--N-mask", type=int, default=4) # N Masksembles
+    parser.add_argument("--s-mask", type=float, default=2.0) # s Masksembles
+
     args = parser.parse_args()
     
     if args.ckpt_path is None:
