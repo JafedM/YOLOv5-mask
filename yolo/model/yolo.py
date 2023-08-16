@@ -30,17 +30,11 @@ class YOLOv5(nn.Module):
         
         self.backbone = darknet_pan_backbone(
             depth_multiple=model_size[0], width_multiple=model_size[1]) # 7.5M parameters
-        
-        self.mask = Masksembles2D(
-                    channels=128,
-                    n=N,
-                    scale=s
-                )
-        
+         
         in_channels_list = self.backbone.body.out_channels_list
         strides = (8, 16, 32)
         num_anchors = [len(s) for s in anchors]
-        predictor = Predictor(in_channels_list, num_anchors, num_classes, strides)
+        predictor = Predictor(in_channels_list, num_anchors, num_classes, strides, N, s)
         
         self.head = Head(
             predictor, anchors, strides, 
@@ -58,8 +52,6 @@ class YOLOv5(nn.Module):
         images, targets, scale_factors, image_shapes = self.transformer(images, targets)
         features = self.backbone(images)
         
-        features[0] = self.mask(features[0])
-
         if self.training:
             losses = self.head(features, targets)
             return losses
@@ -76,14 +68,17 @@ class YOLOv5(nn.Module):
 
 
 class Predictor(nn.Module):
-    def __init__(self, in_channels_list, num_anchors, num_classes, strides):
+    def __init__(self, in_channels_list, num_anchors, num_classes, strides, N, s):
         super().__init__()
         self.num_outputs = num_classes + 5
         self.mlp = nn.ModuleList()
+        self.masks = nn.ModuleList()
         
         for in_channels, n in zip(in_channels_list, num_anchors):
             out_channels = n * self.num_outputs
+            self.masks.append(Masksembles2D(in_channels, n=N, scale=s))
             self.mlp.append(nn.Conv2d(in_channels, out_channels, 1))
+            
             
         #for m in self.modules():
         #    if isinstance(m, nn.Conv2d):
@@ -100,9 +95,11 @@ class Predictor(nn.Module):
         preds = []
         for i in range(len(x)):
             h, w = x[i].shape[-2:]
-            pred = self.mlp[i](x[i])
+            pred = self.masks[i](x[i])
+            pred = self.mlp[i](pred)
             pred = pred.permute(0, 2, 3, 1).reshape(N, h, w, -1, L)
             preds.append(pred)
         return preds
+    
     
     
