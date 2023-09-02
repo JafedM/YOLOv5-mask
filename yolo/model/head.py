@@ -53,6 +53,7 @@ class Head(nn.Module):
             "loss_obj": gt_boxes.new_tensor(0),
             "loss_cls": gt_boxes.new_tensor(0)}
         for pred, stride, wh in zip(preds, self.strides, self.anchors):
+            pred, sigmas = pred[...,:-4], torch.clamp(pred[...,-4:],-10,10)
             anchor_id, gt_id = box_ops.size_matched_idx(wh, gt_boxes[:, 2:], self.match_thresh)
 
             gt_object = torch.zeros_like(pred[..., 4])
@@ -63,11 +64,12 @@ class Head(nn.Module):
                 image_id = image_ids[gt_id]
                 
                 pred_level = pred[image_id, grid_xy[:, 1], grid_xy[:, 0], anchor_id]
+                sigma_level = sigmas[image_id, grid_xy[:, 1], grid_xy[:, 0], anchor_id]
                 
                 xy = 2 * torch.sigmoid(pred_level[:, :2]) - 0.5 + grid_xy
                 wh = 4 * torch.sigmoid(pred_level[:, 2:4]) ** 2 * wh[anchor_id] / stride
                 box_grid = torch.cat((xy, wh), dim=1)
-                giou = box_ops.box_giou(box_grid, gt_boxes[gt_id] / stride).to(dtype)
+                giou = box_ops.box_giou(box_grid, gt_boxes[gt_id] / stride, sigma_level).to(dtype)
                 losses["loss_box"] += (1 - giou).mean()
                 
                 gt_object[image_id, grid_xy[:, 1], grid_xy[:, 0], anchor_id] = \
@@ -86,6 +88,7 @@ class Head(nn.Module):
     def inference(self, preds, image_shapes, scale_factors, max_size):
         ids, ps, boxes = [], [], []
         for pred, stride, wh in zip(preds, self.strides, self.anchors): # 3.54s
+            pred, sigmas = pred[...,:-4], pred[...,-4:]
             pred = torch.sigmoid(pred)
             n, y, x, a = torch.where(pred[..., 4] > self.score_thresh)
             p = pred[n, y, x, a]

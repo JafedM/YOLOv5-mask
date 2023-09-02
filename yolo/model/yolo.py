@@ -70,7 +70,7 @@ class YOLOv5(nn.Module):
 class Predictor(nn.Module):
     def __init__(self, in_channels_list, num_anchors, num_classes, strides, N, s):
         super().__init__()
-        self.num_outputs = num_classes + 5
+        self.num_outputs = num_classes + 5 + 4
         self.mlp = nn.ModuleList()
         self.masks = nn.ModuleList()
         

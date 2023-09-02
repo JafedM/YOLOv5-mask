@@ -32,7 +32,7 @@ def assign_targets_to_proposals(xy, size, overlap=0.5):
 
 
 # temporarily not merge box_giou and box_ciou
-def box_giou(box1, box2): # box format: (cx, cy, w, h)
+def box_giou(box1, box2, sigmas): # box format: (cx, cy, w, h)
     cx1, cy1, w1, h1 = box1.T
     cx2, cy2, w2, h2 = box2.T
     
@@ -44,13 +44,19 @@ def box_giou(box1, box2): # box format: (cx, cy, w, h)
     ws = torch.min(b1_x2, b2_x2) - torch.max(b1_x1, b2_x1)
     hs = torch.min(b1_y2, b2_y2) - torch.max(b1_y1, b2_y1)
     inter = ws.clamp(min=0) * hs.clamp(min=0)
-    union = w1 * h1 + w2 * h2 - inter
+    union = w1 * h1 + w2 * h2 - inter   
     iou = inter / union
     
     cw = torch.max(b1_x2, b2_x2) - torch.min(b1_x1, b2_x1)
     ch = torch.max(b1_y2, b2_y2) - torch.min(b1_y1, b2_y1)
     c_area = cw * ch
-    return iou - (c_area - union) / c_area
+
+    loss_sigma = torch.mean(0.5*torch.exp(-sigmas[:,0]) * (cx2 - cx1)**2 + 0.5*sigmas[:,0]) + torch.norm(sigmas[:,0])
+    loss_sigma += torch.mean(0.5*torch.exp(-sigmas[:,1]) * (cy2 - cy1)**2 + 0.5*sigmas[:,1]) + torch.norm(sigmas[:,1])
+    loss_sigma += torch.mean(0.5*torch.exp(-sigmas[:,2]) * (w2 - w1)**2 + 0.5*sigmas[:,2]) + torch.norm(sigmas[:,2])
+    loss_sigma += torch.mean(0.5*torch.exp(-sigmas[:,3]) * (h2 - h1)**2 + 0.5*sigmas[:,3]) + torch.norm(sigmas[:,3])
+
+    return loss_sigma
 
 
 def box_ciou(box1, box2): # box format: (cx, cy, w, h)
