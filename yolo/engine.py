@@ -46,7 +46,7 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, args, ema):
             losses = model(images, targets)
             
         if num_iters % args.print_freq == 0:
-            print("{}\t".format(num_iters), "\t".join("{:.3f}".format(l.item()) for l in losses.values()))
+            print("{}\t".format(num_iters), "\t".join("{}/{:.3f}".format(k,l.item()) for k, l in losses.items()))
             
         losses = {k: v * args.batch_size for k, v in losses.items()}
         total_loss = sum(losses.values())

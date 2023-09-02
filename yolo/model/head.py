@@ -53,7 +53,7 @@ class Head(nn.Module):
             "loss_obj": gt_boxes.new_tensor(0),
             "loss_cls": gt_boxes.new_tensor(0)}
         for pred, stride, wh in zip(preds, self.strides, self.anchors):
-            pred, sigmas = pred[...,:-4], torch.clamp(pred[...,-4:],-10,10)
+            pred, sigmas = pred[...,:-4], torch.clamp(pred[...,-4:],-40,40)
             anchor_id, gt_id = box_ops.size_matched_idx(wh, gt_boxes[:, 2:], self.match_thresh)
 
             gt_object = torch.zeros_like(pred[..., 4])
@@ -69,8 +69,9 @@ class Head(nn.Module):
                 xy = 2 * torch.sigmoid(pred_level[:, :2]) - 0.5 + grid_xy
                 wh = 4 * torch.sigmoid(pred_level[:, 2:4]) ** 2 * wh[anchor_id] / stride
                 box_grid = torch.cat((xy, wh), dim=1)
-                giou = box_ops.box_giou(box_grid, gt_boxes[gt_id] / stride, sigma_level).to(dtype)
-                losses["loss_box"] += (1 - giou).mean()
+                giou, loss_giou = box_ops.box_giou(box_grid, gt_boxes[gt_id] / stride, sigma_level)
+                giou, loss_giou = giou.to(dtype), loss_giou.to(dtype) 
+                losses["loss_box"] += loss_giou
                 
                 gt_object[image_id, grid_xy[:, 1], grid_xy[:, 0], anchor_id] = \
                 self.giou_ratio * giou.detach().clamp(0) + (1 - self.giou_ratio)

@@ -51,12 +51,12 @@ def box_giou(box1, box2, sigmas): # box format: (cx, cy, w, h)
     ch = torch.max(b1_y2, b2_y2) - torch.min(b1_y1, b2_y1)
     c_area = cw * ch
 
-    loss_sigma = torch.mean(0.5*torch.exp(-sigmas[:,0]) * (cx2 - cx1)**2 + 0.5*sigmas[:,0]) + torch.norm(sigmas[:,0])
-    loss_sigma += torch.mean(0.5*torch.exp(-sigmas[:,1]) * (cy2 - cy1)**2 + 0.5*sigmas[:,1]) + torch.norm(sigmas[:,1])
-    loss_sigma += torch.mean(0.5*torch.exp(-sigmas[:,2]) * (w2 - w1)**2 + 0.5*sigmas[:,2]) + torch.norm(sigmas[:,2])
-    loss_sigma += torch.mean(0.5*torch.exp(-sigmas[:,3]) * (h2 - h1)**2 + 0.5*sigmas[:,3]) + torch.norm(sigmas[:,3])
+    loss_sigma = torch.mean(0.5*torch.exp(-sigmas[:,0]) * (cx2 - cx1)**2 + 0.5*sigmas[:,0]) 
+    loss_sigma += torch.mean(0.5*torch.exp(-sigmas[:,1]) * (cy2 - cy1)**2 + 0.5*sigmas[:,1]) 
+    loss_sigma += torch.mean(0.5*torch.exp(-sigmas[:,2]) * (w2 - w1)**2 + 0.5*sigmas[:,2])
+    loss_sigma += torch.mean(0.5*torch.exp(-sigmas[:,3]) * (h2 - h1)**2 + 0.5*sigmas[:,3]) 
 
-    return loss_sigma
+    return iou - (c_area - union) / c_area, loss_sigma
 
 
 def box_ciou(box1, box2): # box format: (cx, cy, w, h)
