@@ -71,7 +71,9 @@ class Head(nn.Module):
                 box_grid = torch.cat((xy, wh), dim=1)
                 giou, loss_giou = box_ops.box_giou(box_grid, gt_boxes[gt_id] / stride, sigma_level)
                 giou, loss_giou = giou.to(dtype), loss_giou.to(dtype) 
-                losses["loss_box"] += loss_giou
+
+                #Loss
+                losses["loss_box"] += 0.2*loss_giou + (1 - giou).mean()
                 
                 gt_object[image_id, grid_xy[:, 1], grid_xy[:, 0], anchor_id] = \
                 self.giou_ratio * giou.detach().clamp(0) + (1 - self.giou_ratio)
