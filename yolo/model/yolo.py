@@ -12,7 +12,7 @@ from .transform import Transformer
 class YOLOv5(nn.Module):
     def __init__(self, num_classes, model_size=(0.33, 0.5),
                  match_thresh=4, giou_ratio=1, img_sizes=(320, 416),
-                 score_thresh=0.1, nms_thresh=0.6, detections=100, N=4, s=2.0):
+                 score_thresh=0.1, nms_thresh=0.6, detections=100, N=4, s=2.0, fine=False):
         super().__init__()
         # original
         anchors1 = [
@@ -39,7 +39,7 @@ class YOLOv5(nn.Module):
         self.head = Head(
             predictor, anchors, strides, 
             match_thresh, giou_ratio, loss_weights, 
-            score_thresh, nms_thresh, detections)
+            score_thresh, nms_thresh, detections, fine=fine)
         
         if isinstance(img_sizes, int):
             img_sizes = (img_sizes, img_sizes)

@@ -8,7 +8,7 @@ from . import box_ops
 class Head(nn.Module):
     def __init__(self, predictor, anchors, strides, 
                  match_thresh, giou_ratio, loss_weights, 
-                 score_thresh, nms_thresh, detections):
+                 score_thresh, nms_thresh, detections, fine):
         super().__init__()
         self.predictor = predictor
         self.register_buffer("anchors", torch.Tensor(anchors))
@@ -25,6 +25,8 @@ class Head(nn.Module):
         self.merge = False
         self.eval_with_loss = False
         #self.min_size = 2
+
+        self.fine = fine
         
     def forward(self, features, targets, image_shapes=None, scale_factors=None, max_size=None):
         preds = self.predictor(features)
@@ -73,7 +75,10 @@ class Head(nn.Module):
                 giou, loss_giou = giou.to(dtype), loss_giou.to(dtype) 
 
                 #Loss
-                losses["loss_box"] += 0.2*loss_giou + (1 - giou).mean()
+                if self.fine:
+                    losses["loss_box"] += loss_giou
+                else:
+                    losses["loss_box"] += (1 - giou).mean()
                 
                 gt_object[image_id, grid_xy[:, 1], grid_xy[:, 0], anchor_id] = \
                 self.giou_ratio * giou.detach().clamp(0) + (1 - self.giou_ratio)

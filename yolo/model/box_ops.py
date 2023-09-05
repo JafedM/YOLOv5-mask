@@ -53,8 +53,8 @@ def box_giou(box1, box2, sigmas): # box format: (cx, cy, w, h)
 
     loss_sigma = torch.mean(0.5*torch.exp(-sigmas[:,0]) * (cx2 - cx1)**2 + 0.5*sigmas[:,0]) 
     loss_sigma += torch.mean(0.5*torch.exp(-sigmas[:,1]) * (cy2 - cy1)**2 + 0.5*sigmas[:,1]) 
-    loss_sigma += torch.mean(0.5*torch.exp(-sigmas[:,2]) * (w2 - w1)**2 + 0.5*sigmas[:,2])
-    loss_sigma += torch.mean(0.5*torch.exp(-sigmas[:,3]) * (h2 - h1)**2 + 0.5*sigmas[:,3]) 
+    loss_sigma += torch.mean(0.5*torch.exp(-sigmas[:,2]) * (torch.sqrt(w2) - torch.sqrt(w1))**2 + 0.5*sigmas[:,2])
+    loss_sigma += torch.mean(0.5*torch.exp(-sigmas[:,3]) * (torch.sqrt(h2) - torch.sqrt(h1))**2 + 0.5*sigmas[:,3]) 
 
     return iou - (c_area - union) / c_area, loss_sigma
 
