@@ -94,22 +94,26 @@ class Head(nn.Module):
         return losses
     
     def inference(self, preds, image_shapes, scale_factors, max_size):
-        ids, ps, boxes = [], [], []
+        ids, ps, boxes, vars = [], [], [], []
         for pred, stride, wh in zip(preds, self.strides, self.anchors): # 3.54s
             pred, sigmas = pred[...,:-4], pred[...,-4:]
+            
             pred = torch.sigmoid(pred)
             n, y, x, a = torch.where(pred[..., 4] > self.score_thresh)
             p = pred[n, y, x, a]
+            var = sigmas[n, y, x, a]
             
             xy = torch.stack((x, y), dim=1)
             xy = (2 * p[:, :2] - 0.5 + xy) * stride
             wh = 4 * p[:, 2:4] ** 2 * wh[a]
             box = torch.cat((xy, wh), dim=1)
             
+            vars.append(var)
             ids.append(n)
             ps.append(p)
             boxes.append(box)
-            
+
+        vars = torch.cat(vars)
         ids = torch.cat(ids)
         ps = torch.cat(ps)
         boxes = torch.cat(boxes)
@@ -117,12 +121,13 @@ class Head(nn.Module):
         boxes = box_ops.cxcywh2xyxy(boxes)
         logits = ps[:, [4]] * ps[:, 5:]
         indices, labels = torch.where(logits > self.score_thresh) # 4.94s
-        ids, boxes, scores = ids[indices], boxes[indices], logits[indices, labels]
+        ids, boxes, scores, vars = ids[indices], boxes[indices], logits[indices, labels], vars[indices]
+        
         
         results = []
         for i, im_s in enumerate(image_shapes): # 20.97s
             keep = torch.where(ids == i)[0] # 3.11s
-            box, label, score = boxes[keep], labels[keep], scores[keep]
+            box, label, score, sigmas = boxes[keep], labels[keep], scores[keep], vars[keep]
             #ws, hs = boxes[:, 2] - boxes[:, 0], boxes[:, 3] - boxes[:, 1] # 0.27s
             #keep = torch.where((ws >= self.min_size) & (hs >= self.min_size))[0] # 3.33s
             #boxes, objectness, logits = boxes[keep], objectness[keep], logits[keep] # 0.36s
@@ -141,10 +146,9 @@ class Head(nn.Module):
                     mask = nms_label[:, None] == label[None]
                     iou = (box_ops.box_iou(nms_box, box) * mask) > self.nms_thresh # 1.84s
                     weights = iou * score[None] # 0.14s
-                    nms_box = torch.mm(weights, box) / weights.sum(1, keepdim=True) # 0.55s
-                    
-                box, label, score = nms_box / scale_factors[i], nms_label, score[keep] # 0.30s
-            results.append(dict(boxes=box, labels=label, scores=score)) # boxes format: (xmin, ymin, xmax, ymax)
+                    nms_box = torch.mm(weights, box) / weights.sum(1, keepdim=True) # 0.55s 
+                box, label, score, sigmas = nms_box / scale_factors[i], nms_label, score[keep], sigmas[keep] # 0.30s
+            results.append(dict(boxes=box, labels=label, scores=score, sigmas=sigmas)) # boxes format: (xmin, ymin, xmax, ymax)
             
         return results
     

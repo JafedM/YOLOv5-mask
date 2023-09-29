@@ -133,3 +133,8 @@ data/*
 yolov5s_official_2cf45318.pth
 checkpoints/*
 yolo copy
+Varmedian/*
+video.ipynb
+Var/*
+videos
+yolo/datasets_2
