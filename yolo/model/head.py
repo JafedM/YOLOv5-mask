@@ -76,7 +76,7 @@ class Head(nn.Module):
 
                 #Loss
                 if self.fine:
-                    losses["loss_box"] += loss_giou
+                    losses["loss_box"] += 10*(1 - giou).mean() + 0.5*loss_giou
                 else:
                     losses["loss_box"] += (1 - giou).mean()
                 

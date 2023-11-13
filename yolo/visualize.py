@@ -4,6 +4,7 @@ from collections import defaultdict
 import torch
 import matplotlib.pyplot as plt
 from matplotlib import patches
+import numpy as np
 
 
 def xyxy2xywh(box):
@@ -34,7 +35,7 @@ def factor(x):
     return f
 
 
-def show(images, targets=None, classes=None, save=""):
+def show(images, targets=None, classes=None, save="", samples=5):
     if isinstance(images, torch.Tensor) and images.dim() == 3:
         images = [images]
     if isinstance(targets, dict):
@@ -43,10 +44,10 @@ def show(images, targets=None, classes=None, save=""):
         save = [save] * len(images)
         
     for i in range(len(images)):
-        show_single(images[i], targets[i] if targets else targets, classes, save[i])
+        show_single(images[i], targets[i] if targets else targets, classes, save[i], samples)
 
     
-def show_single(image, target, classes, save):
+def show_single(image, target, classes, save, samples=5):
     """
     Show the image, with or without the target
     Arguments:
@@ -85,7 +86,7 @@ def show_single(image, target, classes, save):
         index = 0
         if "boxes" in target:
             boxes = target["boxes"]
-            boxes = xyxy2xywh(boxes).cpu().detach()
+            boxes = xyxy2xywh(boxes).cpu().detach().numpy()
             for i, b in enumerate(boxes):
                 if "labels" in target:
                     l = target["labels"][i].item()
@@ -102,6 +103,18 @@ def show_single(image, target, classes, save):
                     )
                     
                     
+                #Muestro ve incertidumbre epistemica
+                if "espis_var" in target:
+                    espis_var = target["espis_var"][i].detach().numpy()
+                    if np.any(espis_var): #No varianza no muestreo
+                        for sample in range(samples):
+                            x_1, y_1 = np.random.normal(b[0],espis_var[0]), np.random.normal(b[1],espis_var[1])
+                            w_1, h_1 = np.random.normal(b[0]+b[2],espis_var[2]) - x_1 , np.random.normal(b[1]+b[3],espis_var[3]) - y_1
+                            distance_sample_real = np.linalg.norm(b-np.array([x_1, y_1,w_1, h_1]))
+                            color = np.clip(np.array(factor(index))/(distance_sample_real),0,1)
+                            rect = patches.Rectangle([x_1, y_1], w_1, h_1, linewidth=2, edgecolor=color,facecolor="none")
+                            ax.add_patch(rect)
+                
                 rect = patches.Rectangle(b[:2], b[2], b[3], linewidth=2, edgecolor=factor(index), facecolor="none")
                 ax.add_patch(rect)
 
